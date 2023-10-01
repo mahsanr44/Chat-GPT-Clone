@@ -1,63 +1,81 @@
 "use client"
 import ChatSidebar from '@/app/components/ChatSidebar'
+import Message from '@/app/components/Message';
 import { streamReader } from 'openai-edge-stream';
-import React, { useState } from 'react'
+import React, { FormEvent, useState } from 'react'
+import { v4 as uuid } from 'uuid'
 
 const Chat = () => {
     const [messageText, setMessageText] = useState("");
     const [incomingMessage, setIncomingMessage] = useState("");
+    const [newChatMessages, setNewChatMessages] = useState([]);
+    const [generatingResponse, setGeneratingResponse] = useState(false)
 
-    const handleSubmit =async (e: any) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log(messageText);
-
-        const LOCAL_URL = '/api/chat/sendMessage'
-        const response= await fetch(LOCAL_URL,{
+        setGeneratingResponse(true);
+        setNewChatMessages((prev): any => {
+            const newChatMessages = [...prev, {
+                _id: uuid(),
+                role: "user",
+                content: messageText
+            }];
+            return newChatMessages;
+        })
+        setMessageText("")
+        const LOCAL_URL = 'http://localhost:3000/api/chat/sendMessage'
+        const response = await fetch(LOCAL_URL, {
             method: "POST",
-            headers:{
+            headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 message: messageText
             })
         })
-        console.log("Request URL:", LOCAL_URL);
-console.log("Request Headers:", JSON.stringify(response.headers, null, 2));
-console.log("Request Body:", JSON.stringify({ message: messageText }, null, 2));
-
-        console.log("response",response)
         if (!response.ok) {
             console.error("Fetch error:", response.statusText);
             return;
-          }
-        const data= response.body;
-        console.log("data",data)
+        }
+        const data = response.body;
 
-        if(!data){
+        if (!data) {
             return;
         }
-        const reader= data.getReader();
-        console.log("readerr",reader)
-        await streamReader(reader, async (message:any)=>{
-            console.log("msg",message.content)
-            setIncomingMessage(s=>`${s}${message.content}`)
+        const reader = data.getReader();
+        await streamReader(reader, async (message: any) => {
+            setIncomingMessage(s => `${s}${message.content}`)
         })
+        setGeneratingResponse(false)
     };
     return (
         <>
             <div className='grid h-screen grid-cols-[260px_1fr]'>
                 <ChatSidebar />
-                <div className='flex flex-col bg-gray-700'>
-                    <div className='flex-1 text-white'>
-                        {incomingMessage}
+                <div className='flex flex-col bg-gray-700 overflow-hidden'>
+                    <div className='flex-1 text-white overflow-y-scroll'>
+                        {newChatMessages.map((message: string | any | number) => (
+                            <Message
+                                key={message._id}
+                                role={message.role}
+                                content={message.content}
+                            />
+                        ))}
+                        {!!incomingMessage && <Message
+                            role="assistant"
+                            content={incomingMessage}
+                        />}
                     </div>
-                    <footer className='bg-gray-800 p-10'>
+                    <footer className='bg-gray-800 p-7'>
                         <form
-                            onSubmit={handleSubmit} action="">
-                            <fieldset className='flex gap-2'>
+                            onSubmit={handleSubmit}>
+                            <fieldset className='flex gap-2' disabled={generatingResponse}>
                                 <textarea
                                     value={messageText}
-                                    onChange={e => setMessageText(e.target.value)} placeholder='Send a message...' className='w-full resize-none rounded-md bg-gray-700 p-2 text-white focus:border-emerald-500 focus:bg-gray-600 focus:outline focus:outline-emerald-500'></textarea>
+                                    onChange={e => setMessageText(e.target.value)}
+                                    placeholder={generatingResponse ? "" : 'Send a message...'}
+                                    className='w-full resize-none rounded-md bg-gray-700 p-1.5 text-white focus:border-emerald-500 focus:bg-gray-600 focus:outline focus:outline-emerald-500'>
+                                </textarea>
                                 <button className='btn' type='submit'>Send</button>
                             </fieldset>
                         </form>

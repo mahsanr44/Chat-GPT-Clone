@@ -12,12 +12,15 @@ const page = () => {
   if (error) return <div>{error.message}</div>
 
   const router = useRouter();
-  
+
   useEffect(() => {
     if (user) {
       router.push('/chat');
     }
-  }, [user]); 
+    if (!user) {
+      router.push('/');
+    }
+  }, [user]);
 
   return (
     <>
@@ -27,7 +30,7 @@ const page = () => {
           <Link className='bg-red-700 px-4 py-2 mx-1 hover:bg-red-800 rounded-md' href={'/api/auth/logout'}>Logout</Link>
         }
         <div>
-          <h1 className='text-4xl font-extrabold'>Welcome to Chat GPT</h1>
+          <h1 className='text-4xl font-extrabold'>Welcome to My GPT</h1>
         </div>
         <div>
           <p className='text-lg py-4'>Login with your Account</p>
