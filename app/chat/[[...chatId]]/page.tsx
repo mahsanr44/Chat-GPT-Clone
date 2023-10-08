@@ -23,29 +23,55 @@ const Chat = () => {
             return newChatMessages;
         })
         setMessageText("")
-        const LOCAL_URL = 'http://localhost:3000/api/chat/sendMessage'
-        const response = await fetch(LOCAL_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                message: messageText
-            })
-        })
-        if (!response.ok) {
-            console.error("Fetch error:", response.statusText);
-            return;
+        try {
+            const response = await fetch('http://localhost:3000/api/chat/createNewChat', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    message: messageText
+                })
+            });
+            console.log("RESPONSE", response);
+    
+            if (!response.ok) {
+                console.error("Fetch error:", response.statusText);
+                return;
+            }
+    
+            const jsonn = await response.json();
+            console.log('JSON', jsonn);
+    
+            // Handle the JSON data as needed
+    
+        } catch (error) {
+            console.error("Error parsing JSON:", error);
         }
-        const data = response.body;
 
-        if (!data) {
-            return;
-        }
-        const reader = data.getReader();
-        await streamReader(reader, async (message: any) => {
-            setIncomingMessage(s => `${s}${message.content}`)
-        })
+        // const LOCAL_URL = 'http://localhost:3000/api/chat/sendMessage'
+        // const response = await fetch(LOCAL_URL, {
+        //     method: "POST",
+        //     headers: {
+        //         "Content-Type": "application/json"
+        //     },
+        //     body: JSON.stringify({
+        //         message: messageText
+        //     })
+        // })
+        // if (!response.ok) {
+        //     console.error("Fetch error:", response.statusText);
+        //     return;
+        // }
+        // const data = response.body;
+
+        // if (!data) {
+        //     return;
+        // }
+        // const reader = data.getReader();
+        // await streamReader(reader, async (message: any) => {
+        //     setIncomingMessage(s => `${s}${message.content}`)
+        // })
         setGeneratingResponse(false)
     };
     return (
